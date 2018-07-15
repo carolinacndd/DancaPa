@@ -6,6 +6,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.BitmapFont.BitmapFontData;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
@@ -20,7 +21,7 @@ public class SelectLevelScreen implements Screen {
 
 
     //Asset Loader
-    private final static String PATH= "levelscreen/";
+    private final static String PATH= "selectlevelscreen/";
     private static Texture levelbackgroundTexture = new Texture(PATH + "levelscreen.png");
     private static Texture choosesongTexture = new Texture(PATH + "musicscreen-choose-white.png");
     private static Texture logoTexture = new Texture("logo.png");
@@ -29,6 +30,7 @@ public class SelectLevelScreen implements Screen {
     private static Texture star1Texture =  new Texture(PATH + "star-1.png");
     private static Texture star2Texture =  new Texture(PATH + "star-2.png");
     private static Texture star3Texture =  new Texture(PATH + "star-3.png");
+    private static Texture backButtonTexture = new Texture("button-back.png");
 
 
     private static float width = Gdx.graphics.getWidth();
@@ -55,7 +57,19 @@ public class SelectLevelScreen implements Screen {
     private float chooserPosY = chooseTitlePosY - height/8;
     private float chooserOffset = height/10;
 
+    //Star
+    private float starHeight = chooserHeight/4;
+    private float starWidth = starHeight * (float) star1Texture.getWidth()/(float) star1Texture.getHeight();
 
+    //Speaker
+    private float speakerHeight = chooserHeight/2;
+    private float speakerWidth = speakerHeight * (float) speakerTexture.getHeight()/(float) speakerTexture.getWidth();
+
+    //BackButton
+    private float backButtonWidth = width/8;
+    private float backButtonHeight = backButtonWidth * (float)backButtonTexture.getHeight()/(float)backButtonTexture.getWidth();
+    private float backButtonPosX = width/60;
+    private float backButtonPosY = height/60;
 
     private SpriteBatch batch = new SpriteBatch();
     private BitmapFont font = new BitmapFont();
@@ -87,6 +101,15 @@ public class SelectLevelScreen implements Screen {
             auxPosY -= chooserOffset;
         }
 
+        ImageButton backButton = ButtonFactory.createButton(backButtonTexture);
+        backButton.setSize(backButtonWidth, backButtonHeight);
+        backButton.setPosition(backButtonPosX, backButtonPosY);
+        backButton.addListener((c)->{
+            Gdx.input.vibrate(100);
+            game.setScreen(new MenuScreen(game));
+            return true;
+        });
+        stage.addActor(backButton);
     }
 
 
@@ -117,13 +140,19 @@ public class SelectLevelScreen implements Screen {
     private void renderChooserContent()
     {
         batch.begin();
-
+        font.getData().setScale(2f);
+        float auxPosY = chooserPosY + chooserHeight/4;
         for(int i=0; i<3; i++)
         {
-
+            batch.draw(star3Texture, chooserPosX + chooserPosX*2/8, auxPosY + chooserHeight/8, starWidth, starHeight);
+            font.draw(batch, "Placeholder \n High Score: 696969", chooserPosX + chooserPosX*2/8 + starWidth, auxPosY + chooserHeight/2);
+            batch.draw(speakerTexture, chooserPosX + chooserWidth *.9f, auxPosY, speakerWidth, speakerHeight);
+            auxPosY-=chooserOffset;
         }
-        font.
-        font.draw(batch, "Hello World", 100, 100);
+        //TODO: Use hiero and create .ftn file
+        //font.getData().setScale(3f);
+        //font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        //font.draw(batch, "Hello World", 100, 100);
 
         batch.end();
     }
