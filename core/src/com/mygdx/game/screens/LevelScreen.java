@@ -3,12 +3,25 @@ package com.mygdx.game.screens;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.mygdx.game.helpers.ButtonFactory;
+import com.mygdx.game.helpers.Pair;
+import com.mygdx.game.helpers.Position;
+import com.mygdx.game.model.Move;
+import com.mygdx.game.model.Timer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Created by carolinacandido on 15/07/18.
@@ -16,20 +29,49 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 public class LevelScreen implements Screen {
 
+    private enum MoveState{
+        RIGHT, WRONG;
+    }
+
+
+
+    private final int ROWS = 3;
+    private final int COLUMNS = 3;
+    private final int STEP = 91;
+    private final int MOVEHEIGHT = 84;
+    private final int NRMOVES = 5;
 
     //Asset Loader
     private final static String PATH= "levelscreen/";
-    private static Texture levelbackgroundTexture = new Texture(PATH + "game-background.png");
-    private static Texture movesTexture = new Texture(PATH + "moves-buttons.png");
+    private static Texture levelbackgroundTexture = new Texture(PATH + "background_middle.png");
+    private static Texture movesButtonsTexture = new Texture(PATH + "moves-buttons.png");
+    private static TextureRegion [] movesButtons = new TextureRegion[8];
+    private static Texture movesTexture = new Texture(PATH + "moves-border.png");
     private static TextureRegion [] moves = new TextureRegion[8];
+
+    private List<Pair<TextureRegion, Position>> choreography = new ArrayList<>();
+    private List<Pair<Move, Timer>> choreographyOnSegs = new ArrayList<>();
 
     private static float width = Gdx.graphics.getWidth();
     private static float height = Gdx.graphics.getHeight();
+    private static float MoveOffset = 1f;
 
     private SpriteBatch batch = new SpriteBatch();
-    private BitmapFont font = new BitmapFont();
     private Game game;
     private Stage stage;
+    private static float FRAME_DURATION = 1f;
+    private float elapsed_time = 0f;
+    private float origin_x, origin_y =  (Gdx.graphics.getHeight() - MOVEHEIGHT) / 2;
+
+    //Dimensions
+
+    //moveTexture
+    private float moveWidth = width/4;
+    private float moveHeight = moveWidth * (float) MOVEHEIGHT/STEP;
+    private float movePosX = width/3 - moveWidth/2 - width/20;
+    private float movePosY = height/10 - moveHeight/2;
+    private float offSetX = height/10;
+    private float offSetY = height/10;
 
 
     public LevelScreen(Game game)
@@ -38,23 +80,92 @@ public class LevelScreen implements Screen {
         this.stage = new Stage(new ScreenViewport(), batch);
         Gdx.input.setInputProcessor(stage);
         initUI();
+        createTuples();
+    }
+
+    private void createTuples()
+    {
+        float x;
+        Random random = new Random();
+        int segs = 1;
+        for(int i=0; i<NRMOVES; i++)
+        {
+            int idx = random.nextInt(moves.length);
+            choreographyOnSegs.add(new Pair<>(new Move(idx), new Timer(segs)));
+            x = getX(segs);
+            choreography.add(new Pair<>(moves[idx], new Position(x, origin_y)));
+            segs += 1;
+        }
     }
 
     private void createMoves()
     {
-        int step = 91; int x = 0; int y = 0;
-        for(int i=0; i<moves.length; ++i){
-            TextureRegion txtreg = new TextureRegion(movesTexture,
-                    x, y, step, step);
+        int x = 0; int y = 0;
+        for(int i = 0; i< movesButtons.length; ++i){
+            TextureRegion txtreg = new TextureRegion(movesButtonsTexture,
+                    x, y, STEP, STEP);
             txtreg.flip(true, false);
-            moves[i] = txtreg;
-            x +=step;
+            TextureRegion txmtreg = new TextureRegion(movesTexture,
+                    x, y, STEP, STEP);
+            txtreg.flip(true, false);
+            movesButtons[i] = txtreg;
+            moves[i] = txmtreg;
+            x +=STEP;
+
         }
+        System.out.println(movesButtons.length + "Moves");
+        System.out.println("Move height: "+ movesButtons[0].getTexture().getHeight() + "Move widht: " + movesButtons[0].getTexture().getWidth());
     }
 
     private void initUI()
     {
         createMoves();
+
+        float auxX = movePosX;
+        float auxY = movePosY;
+        int movesIdx=0;
+        for(int c=0; c<COLUMNS; c++)
+        {
+
+            for(int r=0; r<ROWS; r++)
+            {
+                if(c==r && c!=0 && c!=COLUMNS-1)
+                {
+                    auxX+=offSetX;
+                    continue;
+                }
+                if(movesIdx>= movesButtons.length)
+                {
+                    break;
+                }
+                ImageButton moveButton = ButtonFactory.createButton(movesButtons[movesIdx]);
+                final int m  = movesIdx;
+                moveButton.setSize(moveWidth, moveHeight);
+                moveButton.setPosition(auxX, auxY);
+                moveButton.addListener((g)->{
+                    Gdx.input.vibrate(100);
+                    inputHandler(m);
+                    return true;
+                });
+                stage.addActor(moveButton);
+                movesIdx+=1;
+                auxX+=offSetX;
+                System.out.println("Rows: " + r);
+            }
+            System.out.println("Column: " + c);
+            auxY+=offSetY;
+            auxX=movePosX;
+        }
+    }
+
+    private void inputHandler(int buttonMoveIdx)
+    {
+        int currentMoveIdx = getCurrentMove();
+        if(buttonMoveIdx == currentMoveIdx)
+            Gdx.input.vibrate(100);
+        else
+            System.out.println("Error -> CurrentMove: " + currentMoveIdx + "and SelectedMove: " + buttonMoveIdx);
+            //Gdx.input.vibrate(1000);
     }
 
     @Override
@@ -63,8 +174,69 @@ public class LevelScreen implements Screen {
     }
 
     @Override
-    public void render(float delta) {
+    public void render(float delta)
+    {
+        Gdx.gl.glClearColor(0, 0, 0,0);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        elapsed_time +=  Gdx.graphics.getDeltaTime();
+
+        batch.begin();
+        batch.draw(levelbackgroundTexture, 0f, 0f, width, height);
+
+        for(int i=0; i<NRMOVES; i++)
+        {
+            Pair<TextureRegion, Position> moveExec = choreography.get(i);
+            Pair<Move, Timer> moveTime = choreographyOnSegs.get(i);
+            float auxX = moveExec.snd.getX();
+            batch.draw(moveExec.fst, auxX, moveExec.snd.getY(), moveWidth, moveHeight);
+            updateMoveStates();
+
+            //batch.draw(moveExec.fst.getTexture(), moveExec.snd.getX(), origin_y, moveWidth, moveHeight);
+
+            moveExec.snd.setX(auxX - MoveOffset);
+        }
+
+        batch.end();
+
+        stage.act(Gdx.graphics.getRawDeltaTime());
+        stage.draw();
+    }
+
+    private int getCurrentMove()
+    {
+        Move move = null;
+        for (Pair<Move, Timer> m: choreographyOnSegs)
+        {
+            if(m.fst.isCurrentMove())
+            {
+                move = m.fst;
+                break;
+            }
+        }
+        return move==null ? -1 : move.getMoveIdx();
+    }
+
+    private void updateMoveStates()
+    {
+        for(int i=0; i<choreography.size(); i++)
+        {
+            Move m = choreographyOnSegs.get(i).fst;
+            Position pos = choreography.get(i).snd;
+            float lastX = pos.getX() + moveWidth;
+            //situação em que o ponto inf esq já passou da area de seleção
+            if(pos.getX()<= width/2 - moveWidth/2)
+            {
+                m.setMoveHasPassed(true);
+                m.setCurrentMove(false);
+            }else{
+                //situação em que o ponto inf dir já se encontra dentro da area de seleção
+                if(pos.getX() <= width/2 +moveWidth/2)
+                {
+                    m.setCurrentMove(true);
+                }
+            }
+        }
     }
 
     @Override
@@ -90,5 +262,12 @@ public class LevelScreen implements Screen {
     @Override
     public void dispose() {
 
+    }
+
+    private float getX(int seg)
+    {
+        if(seg == 0)
+            return  width/2 - moveWidth/2;
+        return width/2 + width/2 * seg - moveWidth/2;
     }
 }

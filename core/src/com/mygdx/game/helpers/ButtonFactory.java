@@ -17,4 +17,9 @@ public class ButtonFactory {
     {
         return new ImageButton(new TextureRegionDrawable(new TextureRegion(buttonTexture)));
     }
+
+    public static ImageButton createButton(TextureRegion buttonTextureReg)
+    {
+        return new ImageButton(new TextureRegionDrawable(buttonTextureReg));
+    }
 }

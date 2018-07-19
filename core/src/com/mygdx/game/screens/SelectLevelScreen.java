@@ -94,7 +94,7 @@ public class SelectLevelScreen implements Screen {
             infoButton.setPosition(chooserPosX, auxPosY);
             infoButton.addListener((c)->{
                 Gdx.input.vibrate(100);
-                game.setScreen(new SelectLevelScreen(game));
+                game.setScreen(new LevelScreen(game));
                 return true;
             });
             stage.addActor(infoButton);
