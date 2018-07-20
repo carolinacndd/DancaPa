@@ -40,11 +40,9 @@ public class ScoreScreen implements Screen {
     private static TextureRegion[] movesButtons = new TextureRegion[8];
     private static Texture movesTexture = new Texture(LEVELPATH + "moves-border.png");
     private static TextureRegion [] moves = new TextureRegion[8];
-    private static Texture scoreBoardTexture = new Texture(SCOREPATH + "scoreboard.png");
-    private static Music music1 = Gdx.audio.newMusic(Gdx.files.getFileHandle("levelscreen/sound/girlslikeyou.m4a", Files.FileType.Internal));
+    private static Texture scoreBoardTexture = new Texture(SCOREPATH + "box-transparent.png");
+    private static Texture backButtonTexture = new Texture("button-back.png");
 
-    private List<Pair<TextureRegion, Position>> choreography = new ArrayList<>();
-    private List<Pair<Move, Timer>> choreographyOnSegs = new ArrayList<>();
 
     private static float width = Gdx.graphics.getWidth();
     private static float height = Gdx.graphics.getHeight();
@@ -68,11 +66,18 @@ public class ScoreScreen implements Screen {
     private float moveWidth = width/4;
     private float moveHeight = moveWidth * (float) MOVEHEIGHT/STEP;
 
+    //BackButton
+    private float backButtonWidth = width/8;
+    private float backButtonHeight = backButtonWidth * (float)backButtonTexture.getHeight()/(float)backButtonTexture.getWidth();
+    private float backButtonPosX = width - backButtonWidth;
+    private float backButtonPosY = height - backButtonHeight;
+
+
     private float offSetX = height/10;
     private float offSetY = height/10;
 
-    private float boardWidth = width*2/3;
-    private float boardHeight = boardWidth * (float) scoreBoardTexture.getHeight()/(float) scoreBoardTexture.getWidth();
+    private float boardWidth = width - width/4;
+    private float boardHeight = height - height/4;
 
 
     public ScoreScreen(Game game, int nrMoves, int score)
@@ -135,17 +140,6 @@ public class ScoreScreen implements Screen {
                 moveButton.setSize(buttonMoveWidth, buttonMoveHeight);
                 moveButton.getImageCell().size(buttonMoveWidth,buttonMoveHeight);
                 moveButton.setPosition(auxX2, auxY2);
-                moveButton.addListener(new InputListener(){
-                    @Override
-                    public void touchUp (InputEvent event, float x, float y, int pointer, int button) {
-
-                    }
-                    @Override
-                    public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) {
-                        Gdx.input.vibrate(100);
-                        return true;
-                    }
-                });
                 stage.addActor(moveButton);
                 movesIdx+=1;
                 auxX2+=buttonMoveWidth;
@@ -153,6 +147,15 @@ public class ScoreScreen implements Screen {
             auxY2+=buttonMoveHeight;
             auxX2=movePosX;
         }
+        ImageButton backButton = ButtonFactory.createButton(backButtonTexture);
+        backButton.setSize(backButtonWidth, backButtonHeight);
+        backButton.setPosition(backButtonPosX, backButtonPosY);
+        backButton.addListener((c)->{
+            Gdx.input.vibrate(100);
+            game.setScreen(new SelectLevelScreen(game));
+            return true;
+        });
+        stage.addActor(backButton);
     }
 
     @Override
@@ -175,30 +178,14 @@ public class ScoreScreen implements Screen {
 
         font.draw(batch, "Timer:" + String.valueOf(timerSeg), width/2, height-2f);
 
-
-        /*for(int i=0; i<NRMOVES; i++)
-        {
-            Pair<TextureRegion, Position> moveExec = choreography.get(i);
-            Pair<Move, Timer> moveTime = choreographyOnSegs.get(i);
-            float auxX = moveExec.snd.getX();
-            batch.draw(moveExec.fst, auxX, moveExec.snd.getY(), moveWidth, moveHeight);
-            if(i==NRMOVES-1 && auxX+moveWidth<width/2)
-                game.setScreen(new ScoreScreen());
-
-
-            //batch.draw(moveExec.fst.getTexture(), moveExec.snd.getX(), origin_y, moveWidth, moveHeight);
-
-            moveExec.snd.setX(auxX - MoveOffset);
-        }*/
-
         batch.end();
 
         stage.act(Gdx.graphics.getRawDeltaTime());
         stage.draw();
 
         batch.begin();
-        batch.draw(scoreBoardTexture, width/2-boardWidth/2, height/2-boardHeight/2);
-        font.draw(batch, "Score: " + score + "/" + nrMoves*100, width/2-boardWidth/2, height/2+boardHeight);
+        batch.draw(scoreBoardTexture, width/2-boardWidth/2, height/2-boardHeight/2, boardWidth, boardHeight );
+        font.draw(batch, "Score: " + score + "/" + nrMoves*100, width/2-boardWidth/4, height/2);
         batch.end();
     }
 

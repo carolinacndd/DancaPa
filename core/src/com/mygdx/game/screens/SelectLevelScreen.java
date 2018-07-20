@@ -19,6 +19,10 @@ import com.mygdx.game.helpers.ButtonFactory;
 
 public class SelectLevelScreen implements Screen {
 
+    private static String girlslikeyou = "Maroon 5 & Cardi B - Girls like you";
+    private static String makeitrain = "Ed Sheeran - Make it rain";
+
+    private static String[] songsNames = {girlslikeyou, makeitrain};
 
     //Asset Loader
     private final static String PATH= "selectlevelscreen/";
@@ -87,7 +91,7 @@ public class SelectLevelScreen implements Screen {
     private void initUI()
     {
         float auxPosY = chooserPosY;
-        for(int i=0; i<3; i++)
+        for(int i=0; i<songsNames.length; i++)
         {
             ImageButton infoButton = ButtonFactory.createButton(chooserTexture);
             infoButton.setSize(chooserWidth, chooserHeight);
@@ -142,11 +146,11 @@ public class SelectLevelScreen implements Screen {
         batch.begin();
         font.getData().setScale(2f);
         float auxPosY = chooserPosY + chooserHeight/4;
-        for(int i=0; i<3; i++)
+        for(int i=0; i<songsNames.length; i++)
         {
             batch.draw(star3Texture, chooserPosX + chooserPosX*2/8, auxPosY + chooserHeight/8, starWidth, starHeight);
-            font.draw(batch, "Placeholder \n High Score: 696969", chooserPosX + chooserPosX*2/8 + starWidth, auxPosY + chooserHeight/2);
-            batch.draw(speakerTexture, chooserPosX + chooserWidth *.9f, auxPosY, speakerWidth, speakerHeight);
+            font.draw(batch, songsNames[i]/*+" \n High Score: "*/, chooserPosX + chooserPosX*2/8 + starWidth, auxPosY + chooserHeight/8);
+            //batch.draw(speakerTexture, chooserPosX + chooserWidth *.9f, auxPosY, speakerWidth, speakerHeight);
             auxPosY-=chooserOffset;
         }
         //TODO: Use hiero and create .ftn file

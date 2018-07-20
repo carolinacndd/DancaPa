@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import javax.xml.soap.Text;
+
 /**
  * Created by carolinacandido on 15/07/18.
  */
@@ -45,11 +47,17 @@ public class LevelScreen implements Screen {
     //Asset Loader
     private final static String PATH= "levelscreen/";
     private static Texture levelbackgroundTexture = new Texture(PATH + "background_middle.png");
+    private static Texture boxTexture = new Texture(PATH + "box-rounded.png");
+
     private static Texture movesButtonsTexture = new Texture(PATH + "moves-buttons.png");
+    private static Texture errorTexture = new Texture(PATH + "error.png");
     private static TextureRegion [] movesButtons = new TextureRegion[8];
     private static Texture movesTexture = new Texture(PATH + "moves-border.png");
     private static TextureRegion [] moves = new TextureRegion[8];
-    private static Music music1 = Gdx.audio.newMusic(Gdx.files.getFileHandle("levelscreen/sound/girlslikeyou.m4a", Files.FileType.Internal));
+    private static Texture backButtonTexture = new Texture("button-back.png");
+
+    private static Music music1 = Gdx.audio.newMusic(Gdx.files.getFileHandle(PATH + "sound/girlslikeyou.m4a", Files.FileType.Internal));
+    private static Music musicPerfect = Gdx.audio.newMusic(Gdx.files.getFileHandle(PATH + "sound/menuget.m4a", Files.FileType.Internal));
 
     private List<Pair<TextureRegion, Position>> choreography = new ArrayList<>();
     private List<Pair<Move, Timer>> choreographyOnSegs = new ArrayList<>();
@@ -68,6 +76,8 @@ public class LevelScreen implements Screen {
     private int score = 0;
     private int timerSeg = 0;
     private boolean start = false;
+    private boolean error = false;
+    private float deltaTime = 0;
 
 
     //Dimensions
@@ -75,6 +85,13 @@ public class LevelScreen implements Screen {
     //moveTexture
     private float moveWidth = width/4;
     private float moveHeight = moveWidth * (float) MOVEHEIGHT/STEP;
+
+    //BackButton
+    private float backButtonWidth = width/8;
+    private float backButtonHeight = backButtonWidth * (float)backButtonTexture.getHeight()/(float)backButtonTexture.getWidth();
+    private float backButtonPosX = width - backButtonWidth;
+    private float backButtonPosY = height - backButtonHeight;
+
 
     private float offSetX = height/10;
     private float offSetY = height/10;
@@ -178,6 +195,16 @@ public class LevelScreen implements Screen {
             auxY2+=buttonMoveHeight;
             auxX2=movePosX;
         }
+        ImageButton backButton = ButtonFactory.createButton(backButtonTexture);
+        backButton.setSize(backButtonWidth, backButtonHeight);
+        backButton.setPosition(backButtonPosX, backButtonPosY);
+        backButton.addListener((c)->{
+            music1.stop();
+            Gdx.input.vibrate(100);
+            game.setScreen(new SelectLevelScreen(game));
+            return true;
+        });
+        stage.addActor(backButton);
     }
 
     private void inputHandler(int buttonMoveIdx)
@@ -186,15 +213,22 @@ public class LevelScreen implements Screen {
         if(currentMove!=null && currentMove.fst.getMoveIdx()== buttonMoveIdx && !currentMove.fst.isMoveHasPassed())
         {
             //score+=100;
-            score+= calculateScore(currentMove.snd.getX());
+            int actualscore = calculateScore(currentMove.snd.getX());
+            if(actualscore >= 90)
+                musicPerfect.play();
+            score+= actualscore;
             currentMove.fst.setMoveHasPassed(true);
             Gdx.input.vibrate(100);
         }
 
         else
+        {
             System.out.println("Error -> CurrentMove: " + (currentMove==null? -1: currentMove.fst.getMoveIdx() )+ "and SelectedMove: " + buttonMoveIdx);
-            //Gdx.input.vibrate(1000);
+            Gdx.input.vibrate(500);
+            error = true;
+        }
     }
+
 
     @Override
     public void show() {
@@ -208,7 +242,13 @@ public class LevelScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         elapsed_time +=  Gdx.graphics.getDeltaTime();
-
+        if(error)
+            deltaTime += Gdx.graphics.getDeltaTime();
+        if(error && deltaTime>=0.5f)
+        {
+            error = false;
+            deltaTime = 0;
+        }
         batch.begin();
         font.getData().setScale(3f);
         batch.draw(levelbackgroundTexture, 0f, 0f, width, height);
@@ -220,6 +260,12 @@ public class LevelScreen implements Screen {
 
         font.draw(batch, "Timer:" + String.valueOf(timerSeg), width/2, height-2f);
         updateMoveStates();
+        if(error)
+        {
+            batch.draw(errorTexture, width/2- width/10/2, height-height/4, width/10, width/10);
+        }
+
+        batch.draw(boxTexture, width/2-moveWidth/2, origin_y, moveWidth, moveHeight);
 
         for(int i=0; i<NRMOVES; i++)
         {
@@ -229,7 +275,6 @@ public class LevelScreen implements Screen {
             batch.draw(moveExec.fst, auxX, moveExec.snd.getY(), moveWidth, moveHeight);
             if(i==NRMOVES-1 && auxX+moveWidth<width/2)
                 game.setScreen(new ScoreScreen(game, NRMOVES, score));
-            //batch.draw(moveExec.fst.getTexture(), moveExec.snd.getX(), origin_y, moveWidth, moveHeight);
 
             moveExec.snd.setX(auxX - MoveOffset);
         }
