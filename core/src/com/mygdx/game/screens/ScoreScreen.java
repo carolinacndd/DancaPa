@@ -1,15 +1,12 @@
 package com.mygdx.game.screens;
 
-import com.badlogic.gdx.Audio;
 import com.badlogic.gdx.Files;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -17,7 +14,6 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.mygdx.game.helpers.ButtonFactory;
 import com.mygdx.game.helpers.Pair;
@@ -27,28 +23,24 @@ import com.mygdx.game.model.Timer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-/**
- * Created by carolinacandido on 15/07/18.
- */
-
-public class LevelScreen implements Screen {
+public class ScoreScreen implements Screen {
 
     private final int ROWS = 3;
     private final int COLUMNS = 3;
     private final int STEP = 91;
     private final int MOVEHEIGHT = 84;
     private final int NRMOVES = 21;
-    private final int totalSegsSong = 64;
 
     //Asset Loader
-    private final static String PATH= "levelscreen/";
-    private static Texture levelbackgroundTexture = new Texture(PATH + "background_middle.png");
-    private static Texture movesButtonsTexture = new Texture(PATH + "moves-buttons.png");
-    private static TextureRegion [] movesButtons = new TextureRegion[8];
-    private static Texture movesTexture = new Texture(PATH + "moves-border.png");
+    private final static String LEVELPATH = "levelscreen/";
+    private final static String SCOREPATH = "scorescreen/";
+    private static Texture levelbackgroundTexture = new Texture(LEVELPATH + "background_middle.png");
+    private static Texture movesButtonsTexture = new Texture(LEVELPATH + "moves-buttons.png");
+    private static TextureRegion[] movesButtons = new TextureRegion[8];
+    private static Texture movesTexture = new Texture(LEVELPATH + "moves-border.png");
     private static TextureRegion [] moves = new TextureRegion[8];
+    private static Texture scoreBoardTexture = new Texture(SCOREPATH + "scoreboard.png");
     private static Music music1 = Gdx.audio.newMusic(Gdx.files.getFileHandle("levelscreen/sound/girlslikeyou.m4a", Files.FileType.Internal));
 
     private List<Pair<TextureRegion, Position>> choreography = new ArrayList<>();
@@ -61,11 +53,11 @@ public class LevelScreen implements Screen {
     private SpriteBatch batch = new SpriteBatch();
     private BitmapFont font = new BitmapFont();
     private Game game;
+    private int nrMoves, score;
     private Stage stage;
     private static float FRAME_DURATION = 1f;
     private float elapsed_time = 0f;
     private float origin_x, origin_y =  (Gdx.graphics.getHeight() - MOVEHEIGHT) / 2;
-    private int score = 0;
     private int timerSeg = 0;
     private boolean start = false;
 
@@ -79,29 +71,19 @@ public class LevelScreen implements Screen {
     private float offSetX = height/10;
     private float offSetY = height/10;
 
+    private float boardWidth = width*2/3;
+    private float boardHeight = boardWidth * (float) scoreBoardTexture.getHeight()/(float) scoreBoardTexture.getWidth();
 
-    public LevelScreen(Game game)
+
+    public ScoreScreen(Game game, int nrMoves, int score)
     {
         this.game = game;
         this.stage = new Stage(new ScreenViewport(), batch);
+        this.nrMoves = nrMoves;
+        this.score = score;
         Gdx.input.setInputProcessor(stage);
         initUI();
-        createTuples();
-    }
 
-    private void createTuples()
-    {
-        float x;
-        Random random = new Random();
-        int segs = 1;
-        for(int i=0; i<NRMOVES; i++)
-        {
-            int idx = random.nextInt(moves.length);
-            choreographyOnSegs.add(new Pair<>(new Move(idx), new Timer(segs)));
-            x = getX(segs);
-            choreography.add(new Pair<>(moves[idx], new Position(x, origin_y)));
-            segs += 1;
-        }
     }
 
     private void createMoves()
@@ -127,12 +109,6 @@ public class LevelScreen implements Screen {
     {
 
         createMoves();
-        if(!start)
-        {
-            start = true;
-            music1.setVolume(0.5f);
-            music1.play();
-        }
         float buttonMoveWidth = width/5f;
         float buttonMoveHeight = buttonMoveWidth * movesButtons[0].getRegionHeight()/movesButtons[0].getRegionWidth();
         final float movePosX = width/2 - buttonMoveWidth-buttonMoveWidth/2;
@@ -167,7 +143,6 @@ public class LevelScreen implements Screen {
                     @Override
                     public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) {
                         Gdx.input.vibrate(100);
-                        inputHandler(m);
                         return true;
                     }
                 });
@@ -178,22 +153,6 @@ public class LevelScreen implements Screen {
             auxY2+=buttonMoveHeight;
             auxX2=movePosX;
         }
-    }
-
-    private void inputHandler(int buttonMoveIdx)
-    {
-        Pair<Move, Position> currentMove = getCurrentMove();
-        if(currentMove!=null && currentMove.fst.getMoveIdx()== buttonMoveIdx && !currentMove.fst.isMoveHasPassed())
-        {
-            //score+=100;
-            score+= calculateScore(currentMove.snd.getX());
-            currentMove.fst.setMoveHasPassed(true);
-            Gdx.input.vibrate(100);
-        }
-
-        else
-            System.out.println("Error -> CurrentMove: " + (currentMove==null? -1: currentMove.fst.getMoveIdx() )+ "and SelectedMove: " + buttonMoveIdx);
-            //Gdx.input.vibrate(1000);
     }
 
     @Override
@@ -213,80 +172,38 @@ public class LevelScreen implements Screen {
         font.getData().setScale(3f);
         batch.draw(levelbackgroundTexture, 0f, 0f, width, height);
         font.draw(batch, "Score:" + String.valueOf(score), width/20, height-2f);
-        if(music1.isPlaying())
-        {
-            timerSeg = totalSegsSong - Math.round(music1.getPosition());
-        }
 
         font.draw(batch, "Timer:" + String.valueOf(timerSeg), width/2, height-2f);
-        updateMoveStates();
 
-        for(int i=0; i<NRMOVES; i++)
+
+        /*for(int i=0; i<NRMOVES; i++)
         {
             Pair<TextureRegion, Position> moveExec = choreography.get(i);
             Pair<Move, Timer> moveTime = choreographyOnSegs.get(i);
             float auxX = moveExec.snd.getX();
             batch.draw(moveExec.fst, auxX, moveExec.snd.getY(), moveWidth, moveHeight);
             if(i==NRMOVES-1 && auxX+moveWidth<width/2)
-                game.setScreen(new ScoreScreen(game, NRMOVES, score));
+                game.setScreen(new ScoreScreen());
+
+
             //batch.draw(moveExec.fst.getTexture(), moveExec.snd.getX(), origin_y, moveWidth, moveHeight);
 
             moveExec.snd.setX(auxX - MoveOffset);
-        }
+        }*/
 
         batch.end();
 
         stage.act(Gdx.graphics.getRawDeltaTime());
         stage.draw();
+
+        batch.begin();
+        batch.draw(scoreBoardTexture, width/2-boardWidth/2, height/2-boardHeight/2);
+        font.draw(batch, "Score: " + score + "/" + nrMoves*100, width/2-boardWidth/2, height/2+boardHeight);
+        batch.end();
     }
 
-    private Pair<Move, Position> getCurrentMove()
-    {
-        Move move = null;
-        Position pos = null;
-        for(int i=0; i<choreographyOnSegs.size(); i++)
-        {
 
-            if(choreographyOnSegs.get(i).fst.isCurrentMove())
-            {
-                move = choreographyOnSegs.get(i).fst;
-                pos = choreography.get(i).snd;
-                break;
-            }
-        }
-        return move!=null ? new Pair<>(move, pos) : null;
-    }
 
-    private void updateMoveStates()
-    {
-        for(int i=0; i<choreography.size(); i++)
-        {
-            Move m = choreographyOnSegs.get(i).fst;
-            Position pos = choreography.get(i).snd;
-            float lastX = pos.getX() + moveWidth;
-
-            //situação em que o ponto inf dir já se encontra dentro da area de seleção
-            if(pos.getX()>= width/2 - moveWidth/2 && pos.getX() <= width/2 +moveWidth/2)
-            {
-                m.setCurrentMove(true);
-            }
-            //situação em que o ponto inf esq já passou da area de seleção
-            else if(pos.getX() + moveWidth< width/2 -moveWidth/2)
-            {
-                m.setMoveHasPassed(true);
-                m.setCurrentMove(false);
-            }
-        }
-    }
-
-    private int calculateScore(float actualX)
-    {
-        float d = Math.abs(width/2 - moveWidth/2);
-        float dl = Math.abs(width/2 - (actualX+moveWidth/2));
-        int x = Math.round(dl * 100 / d);
-        int perc = 100 - x;
-        return 100 * perc/100;
-    }
 
     @Override
     public void resize(int width, int height) {
@@ -320,3 +237,4 @@ public class LevelScreen implements Screen {
         return width/2 + width/2 * seg - moveWidth/2;
     }
 }
+
